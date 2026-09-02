@@ -84,6 +84,7 @@ export async function buscarLojas(): Promise<string[]> {
 
   return [...LOJAS_PADRAO, ...extras];
 }
+
 export type CompraItem = {
   id: string;
   qtd: number;
@@ -92,7 +93,7 @@ export type CompraItem = {
   data: string;
 };
 
-// Histórico agrupado por produto, pra tela de detalhe.
+// Histórico agrupado por produto, para a tela de detalhe.
 export async function buscarComprasPorProduto(): Promise<Record<string, CompraItem[]>> {
   const supabase = createClient();
   const { data } = await supabase
