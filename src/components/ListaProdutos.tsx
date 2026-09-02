@@ -70,9 +70,11 @@ function Item({ produto, aoClicar }: { produto: ProdutoStatus; aoClicar: () => v
 export function ListaProdutos({
   produtos,
   categoria,
+  lojas,
 }: {
   produtos: ProdutoStatus[];
   categoria: Categoria;
+  lojas: string[];
 }) {
   const [filtro, setFiltro] = useState<Filtro>("TUDO");
   const [novo, setNovo] = useState(false);
@@ -102,6 +104,10 @@ export function ListaProdutos({
         ))}
       </div>
 
+      <p className="mb-3 text-[11.5px] text-ink-soft">
+        Toque em um item para registrar o que você comprou.
+      </p>
+
       {visiveis.length === 0 ? (
         <p className="card text-sm text-ink-soft">
           {filtro === "COMPRADO"
@@ -120,7 +126,11 @@ export function ListaProdutos({
 
       {novo && <NovoItem categoria={categoria} aoFechar={() => setNovo(false)} />}
       {comprando && (
-        <RegistrarCompra produto={comprando} aoFechar={() => setComprando(null)} />
+        <RegistrarCompra
+          produto={comprando}
+          lojas={lojas}
+          aoFechar={() => setComprando(null)}
+        />
       )}
     </>
   );
