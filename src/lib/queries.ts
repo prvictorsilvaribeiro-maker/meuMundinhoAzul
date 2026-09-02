@@ -84,3 +84,32 @@ export async function buscarLojas(): Promise<string[]> {
 
   return [...LOJAS_PADRAO, ...extras];
 }
+export type CompraItem = {
+  id: string;
+  qtd: number;
+  valor_pago: number;
+  loja: string | null;
+  data: string;
+};
+
+// Histórico agrupado por produto, pra tela de detalhe.
+export async function buscarComprasPorProduto(): Promise<Record<string, CompraItem[]>> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("compra")
+    .select("id, produto_id, qtd, valor_pago, loja, data")
+    .order("data", { ascending: false });
+
+  const mapa: Record<string, CompraItem[]> = {};
+  for (const c of data ?? []) {
+    const item: CompraItem = {
+      id: c.id as string,
+      qtd: c.qtd as number,
+      valor_pago: Number(c.valor_pago),
+      loja: c.loja as string | null,
+      data: c.data as string,
+    };
+    (mapa[c.produto_id as string] ??= []).push(item);
+  }
+  return mapa;
+}
