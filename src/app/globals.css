@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background:
+      radial-gradient(900px 500px at 15% -10%, #E7F0FA 0%, transparent 60%),
+      radial-gradient(700px 500px at 95% 5%, #F6EFE4 0%, transparent 55%),
+      #EDF2F8;
+    background-attachment: fixed;
+  }
+  body {
+    @apply text-ink font-sans antialiased;
+  }
+  input,
+  select,
+  textarea {
+    @apply w-full rounded-xl border border-linha bg-white px-3 py-2.5 text-[15px]
+           outline-none focus:border-sky-deep focus:ring-2 focus:ring-sky-wash;
+  }
+  label {
+    @apply mb-1.5 block text-xs font-medium text-ink-soft;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-card border border-linha bg-white p-4;
+  }
+  .track {
+    @apply h-[7px] overflow-hidden rounded-full bg-sky-wash;
+  }
+  .btn-primario {
+    @apply w-full rounded-2xl bg-sky-deep px-4 py-3.5 text-[15px] font-semibold
+           text-white transition-opacity active:opacity-80 disabled:opacity-50;
+  }
+  .btn-secundario {
+    @apply w-full rounded-2xl border border-linha bg-white px-4 py-3
+           text-[15px] font-medium text-ink-soft;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
