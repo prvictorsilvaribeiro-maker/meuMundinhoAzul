@@ -25,8 +25,18 @@ export default function LoginPage() {
 
       <form action={action} className="card space-y-4">
         <div>
-          <label htmlFor="email">E-mail</label>
-          <input id="email" name="email" type="email" autoComplete="email" required />
+          <label htmlFor="usuario">Usuário</label>
+          <input
+            id="usuario"
+            name="usuario"
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="victor"
+            required
+          />
         </div>
         <div>
           <label htmlFor="senha">Senha</label>
