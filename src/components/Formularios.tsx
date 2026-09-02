@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { criarProduto, registrarCompra } from "@/app/actions";
 import { brl } from "@/lib/format";
@@ -114,12 +114,16 @@ export function NovoItem({
 
 export function RegistrarCompra({
   produto,
+  lojas,
   aoFechar,
 }: {
   produto: ProdutoStatus;
+  lojas: string[];
   aoFechar: () => void;
 }) {
   const [erro, action] = useFormState(registrarCompra, null);
+  const [loja, setLoja] = useState("");
+  const [outraLoja, setOutraLoja] = useState("");
   const faltam = Math.max(0, produto.qtd_desejada - produto.qtd_comprada);
 
   return (
@@ -134,33 +138,55 @@ export function RegistrarCompra({
     >
       <form action={async (fd) => { await action(fd); aoFechar(); }} className="space-y-3">
         <input type="hidden" name="produto_id" value={produto.id} />
+        <input type="hidden" name="loja" value={loja === "__outra" ? outraLoja : loja} />
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor="qtd">Quantas comprei</label>
-            <input
-              id="qtd"
-              name="qtd"
-              type="number"
-              min="1"
-              defaultValue={faltam || 1}
-              required
-            />
+            <input id="qtd" name="qtd" type="number" min="1" defaultValue={faltam || 1} required />
           </div>
           <div>
             <label htmlFor="valor_pago">Paguei (R$)</label>
             <input id="valor_pago" name="valor_pago" inputMode="decimal" placeholder="78,00" />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="loja">Loja</label>
-            <input id="loja" name="loja" placeholder="Carter's Outlet" />
-          </div>
-          <div>
-            <label htmlFor="data">Data</label>
-            <input id="data" name="data" type="date" defaultValue={new Date().toISOString().slice(0, 10)} />
-          </div>
+
+        <div>
+          <label htmlFor="loja_select">Loja</label>
+          <select id="loja_select" value={loja} onChange={(e) => setLoja(e.target.value)}>
+            <option value="">Onde vocês compraram?</option>
+            {lojas.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
+            <option value="__outra">Outra…</option>
+          </select>
         </div>
+
+        {loja === "__outra" && (
+          <div>
+            <label htmlFor="outra_loja">Qual loja</label>
+            <input
+              id="outra_loja"
+              value={outraLoja}
+              onChange={(e) => setOutraLoja(e.target.value)}
+              placeholder="Nome da loja"
+              autoFocus
+            />
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="data">Data</label>
+          <input
+            id="data"
+            name="data"
+            type="date"
+            defaultValue={new Date().toISOString().slice(0, 10)}
+          />
+        </div>
+
         {erro && <p className="text-sm text-alerta">{erro}</p>}
         <Enviar label="Registrar compra" />
       </form>
