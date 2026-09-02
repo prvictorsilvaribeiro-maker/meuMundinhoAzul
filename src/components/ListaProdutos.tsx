@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { NovoItem, RegistrarCompra } from "@/components/Formularios";
+import { DetalheProduto, NovoItem } from "@/components/Formularios";
 import { brl, pct } from "@/lib/format";
+import type { CompraItem } from "@/lib/queries";
 import type { Categoria, ProdutoStatus } from "@/lib/types";
 
 type Filtro = "TUDO" | "FALTA" | "COMPRADO";
@@ -71,14 +72,16 @@ export function ListaProdutos({
   produtos,
   categoria,
   lojas,
+  compras,
 }: {
   produtos: ProdutoStatus[];
   categoria: Categoria;
   lojas: string[];
+  compras: Record<string, CompraItem[]>;
 }) {
   const [filtro, setFiltro] = useState<Filtro>("TUDO");
   const [novo, setNovo] = useState(false);
-  const [comprando, setComprando] = useState<ProdutoStatus | null>(null);
+  const [aberto, setAberto] = useState<ProdutoStatus | null>(null);
 
   const visiveis = useMemo(() => {
     if (filtro === "COMPRADO") return produtos.filter((p) => p.status === "COMPLETO");
@@ -105,7 +108,7 @@ export function ListaProdutos({
       </div>
 
       <p className="mb-3 text-[11.5px] text-ink-soft">
-        Toque em um item para registrar o que você comprou.
+        Toque em um item para registrar a compra, editar ou excluir.
       </p>
 
       {visiveis.length === 0 ? (
@@ -117,7 +120,7 @@ export function ListaProdutos({
               : "A lista está vazia. Adicione o primeiro item abaixo."}
         </p>
       ) : (
-        visiveis.map((p) => <Item key={p.id} produto={p} aoClicar={() => setComprando(p)} />)
+        visiveis.map((p) => <Item key={p.id} produto={p} aoClicar={() => setAberto(p)} />)
       )}
 
       <button onClick={() => setNovo(true)} className="btn-primario mt-3.5">
@@ -125,11 +128,12 @@ export function ListaProdutos({
       </button>
 
       {novo && <NovoItem categoria={categoria} aoFechar={() => setNovo(false)} />}
-      {comprando && (
-        <RegistrarCompra
-          produto={comprando}
+      {aberto && (
+        <DetalheProduto
+          produto={aberto}
           lojas={lojas}
-          aoFechar={() => setComprando(null)}
+          compras={compras[aberto.id] ?? []}
+          aoFechar={() => setAberto(null)}
         />
       )}
     </>
