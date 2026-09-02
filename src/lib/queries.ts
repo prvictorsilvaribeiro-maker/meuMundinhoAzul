@@ -56,3 +56,31 @@ export function resumir(produtos: ProdutoStatus[]) {
     gasto: produtos.reduce((s, p) => s + p.valor_gasto, 0),
   };
 }
+
+export const LOJAS_PADRAO = [
+  "MacroBaby",
+  "Carter's",
+  "Amazon",
+  "Target",
+  "Walmart",
+  "Ross",
+  "Marshalls",
+  "TJ Maxx",
+  "Burlington",
+  "Old Navy",
+  "The Children's Place",
+  "Premium Outlets",
+];
+
+// Junta as lojas fixas com as que vocês já digitaram na mão.
+export async function buscarLojas(): Promise<string[]> {
+  const supabase = createClient();
+  const { data } = await supabase.from("compra").select("loja").not("loja", "is", null);
+
+  const usadas = [...new Set((data ?? []).map((c) => (c.loja as string).trim()))];
+  const extras = usadas
+    .filter((l) => l && !LOJAS_PADRAO.some((padrao) => padrao.toLowerCase() === l.toLowerCase()))
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  return [...LOJAS_PADRAO, ...extras];
+}
