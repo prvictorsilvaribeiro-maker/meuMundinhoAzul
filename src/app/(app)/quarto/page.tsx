@@ -1,11 +1,15 @@
 import { ListaProdutos } from "@/components/ListaProdutos";
 import { brl } from "@/lib/format";
-import { buscarLojas, buscarProdutos, resumir } from "@/lib/queries";
+import { buscarComprasPorProduto, buscarLojas, buscarProdutos, resumir } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function QuartoPage() {
-  const [produtos, lojas] = await Promise.all([buscarProdutos("QUARTO"), buscarLojas()]);
+  const [produtos, lojas, compras] = await Promise.all([
+    buscarProdutos("QUARTO"),
+    buscarLojas(),
+    buscarComprasPorProduto(),
+  ]);
   const r = resumir(produtos);
 
   return (
@@ -16,7 +20,7 @@ export default async function QuartoPage() {
         </p>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Quarto</h1>
       </header>
-      <ListaProdutos produtos={produtos} categoria="QUARTO" lojas={lojas} />
+      <ListaProdutos produtos={produtos} categoria="QUARTO" lojas={lojas} compras={compras} />
     </>
   );
 }
