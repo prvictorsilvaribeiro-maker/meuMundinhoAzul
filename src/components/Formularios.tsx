@@ -9,6 +9,7 @@ import {
   criarProduto,
   registrarCompra,
 } from "@/app/actions";
+import { CATEGORIAS } from "@/lib/categorias";
 import { brl, dataCurta } from "@/lib/format";
 import type { CompraItem } from "@/lib/queries";
 import type { Categoria, ProdutoStatus } from "@/lib/types";
@@ -69,13 +70,11 @@ function Sheet({
   );
 }
 
-// Os mesmos campos servem pra criar e pra editar.
+// Os mesmos campos servem para criar e para editar.
 function CamposProduto({
-  categoria,
   produto,
   subcategorias,
 }: {
-  categoria: Categoria;
   produto?: ProdutoStatus;
   subcategorias: string[];
 }) {
@@ -154,6 +153,8 @@ function CamposProduto({
 }
 
 /* ------------------------------------------------------------------ */
+/* Adicionar item novo à lista                                         */
+/* ------------------------------------------------------------------ */
 
 export function NovoItem({
   categoria,
@@ -172,13 +173,13 @@ export function NovoItem({
 
   return (
     <Sheet
-      titulo={categoria === "ENXOVAL" ? "Novo item do enxoval" : "Novo item do quarto"}
+      titulo={`Novo item · ${CATEGORIAS[categoria].titulo}`}
       descricao="O valor orçado é o total que você planeja gastar com todas as unidades."
       aoFechar={aoFechar}
     >
       <form action={action} className="space-y-3">
         <input type="hidden" name="categoria" value={categoria} />
-        <CamposProduto categoria={categoria} subcategorias={subcategorias} />
+        <CamposProduto subcategorias={subcategorias} />
         {estado?.erro && <p className="text-sm text-alerta">{estado.erro}</p>}
         <Enviar label="Adicionar à lista" />
       </form>
@@ -187,16 +188,20 @@ export function NovoItem({
 }
 
 /* ------------------------------------------------------------------ */
+/* Detalhe: registrar compra, histórico, editar e excluir              */
+/* ------------------------------------------------------------------ */
 
 export function DetalheProduto({
   produto,
   lojas,
   compras,
+  subcategorias,
   aoFechar,
 }: {
   produto: ProdutoStatus;
   lojas: string[];
   compras: CompraItem[];
+  subcategorias: string[];
   aoFechar: () => void;
 }) {
   const [modo, setModo] = useState<"compra" | "editar" | "excluir">("compra");
@@ -210,7 +215,7 @@ export function DetalheProduto({
           ? "Mudar o nome, a quantidade ou o valor orçado não mexe nas compras já registradas."
           : faltam > 0
             ? `Faltam ${faltam} de ${produto.qtd_desejada}. Orçado: ${brl(produto.valor_orcado)}.`
-            : `Já completo. Registrar mesmo assim soma ao total gasto.`
+            : "Já completo. Registrar mesmo assim soma ao total gasto."
       }
       aoFechar={aoFechar}
     >
@@ -230,7 +235,11 @@ export function DetalheProduto({
       )}
 
       {modo === "editar" && (
-        <FormEdicao produto={produto} aoVoltar={() => setModo("compra")} />
+        <FormEdicao
+          produto={produto}
+          subcategorias={subcategorias}
+          aoVoltar={() => setModo("compra")}
+        />
       )}
 
       {modo === "excluir" && (
@@ -367,7 +376,15 @@ function Historico({ compras }: { compras: CompraItem[] }) {
   );
 }
 
-function FormEdicao({ produto, aoVoltar }: { produto: ProdutoStatus; aoVoltar: () => void }) {
+function FormEdicao({
+  produto,
+  subcategorias,
+  aoVoltar,
+}: {
+  produto: ProdutoStatus;
+  subcategorias: string[];
+  aoVoltar: () => void;
+}) {
   const [estado, action] = useFormState(atualizarProduto, null);
 
   useEffect(() => {
@@ -377,11 +394,7 @@ function FormEdicao({ produto, aoVoltar }: { produto: ProdutoStatus; aoVoltar: (
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="produto_id" value={produto.id} />
-      <CamposProduto
-        categoria={produto.categoria}
-        produto={produto}
-        subcategorias={subcategorias}
-      />
+      <CamposProduto produto={produto} subcategorias={subcategorias} />
       {estado?.erro && <p className="text-sm text-alerta">{estado.erro}</p>}
       <Enviar label="Salvar alterações" />
       <button type="button" onClick={aoVoltar} className="btn-secundario">
@@ -409,11 +422,20 @@ function ConfirmarExclusao({
       <p className="text-sm leading-relaxed text-ink-soft">
         Excluir <b className="text-ink">{produto.nome}</b> da lista
         {compras.length > 0 &&
-          ` junto com ${compras.length === 1 ? "a compra registrada" : `as ${compras.length} compras registradas`}`}
+          ` junto com ${
+            compras.length === 1
+              ? "a compra registrada"
+              : `as ${compras.length} compras registradas`
+          }`}
         . Isso não pode ser desfeito.
       </p>
       <button
-        onClick={() => iniciar(async () => { await apagarProduto(produto.id); aoFechar(); })}
+        onClick={() =>
+          iniciar(async () => {
+            await apagarProduto(produto.id);
+            aoFechar();
+          })
+        }
         disabled={pendente}
         className="w-full rounded-2xl bg-alerta px-4 py-3.5 text-[15px] font-semibold text-white disabled:opacity-50"
       >
