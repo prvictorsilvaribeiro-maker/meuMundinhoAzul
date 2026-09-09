@@ -73,12 +73,22 @@ function Sheet({
 function CamposProduto({
   categoria,
   produto,
+  subcategorias,
 }: {
   categoria: Categoria;
   produto?: ProdutoStatus;
+  subcategorias: string[];
 }) {
+  const atual = produto?.subcategoria ?? "";
+  const jaNaLista = atual !== "" && subcategorias.includes(atual);
+
+  const [grupo, setGrupo] = useState(jaNaLista ? atual : atual ? "__outra" : "");
+  const [outroGrupo, setOutroGrupo] = useState(jaNaLista ? "" : atual);
+
   return (
     <>
+      <input type="hidden" name="subcategoria" value={grupo === "__outra" ? outroGrupo : grupo} />
+
       <div>
         <label htmlFor="nome">Item</label>
         <input
@@ -89,6 +99,7 @@ function CamposProduto({
           required
         />
       </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label htmlFor="qtd_desejada">Quantos quero</label>
@@ -112,15 +123,32 @@ function CamposProduto({
           />
         </div>
       </div>
+
       <div>
-        <label htmlFor="subcategoria">Grupo (opcional)</label>
-        <input
-          id="subcategoria"
-          name="subcategoria"
-          defaultValue={produto?.subcategoria ?? ""}
-          placeholder={categoria === "ENXOVAL" ? "Roupinhas, Banho, Passeio…" : "Móveis, Decoração…"}
-        />
+        <label htmlFor="grupo">Categoria</label>
+        <select id="grupo" value={grupo} onChange={(e) => setGrupo(e.target.value)}>
+          <option value="">Sem categoria</option>
+          {subcategorias.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+          <option value="__outra">Outra…</option>
+        </select>
       </div>
+
+      {grupo === "__outra" && (
+        <div>
+          <label htmlFor="outro_grupo">Qual categoria</label>
+          <input
+            id="outro_grupo"
+            value={outroGrupo}
+            onChange={(e) => setOutroGrupo(e.target.value)}
+            placeholder="Nome da categoria"
+            autoFocus
+          />
+        </div>
+      )}
     </>
   );
 }
@@ -129,9 +157,11 @@ function CamposProduto({
 
 export function NovoItem({
   categoria,
+  subcategorias,
   aoFechar,
 }: {
   categoria: Categoria;
+  subcategorias: string[];
   aoFechar: () => void;
 }) {
   const [estado, action] = useFormState(criarProduto, null);
@@ -148,7 +178,7 @@ export function NovoItem({
     >
       <form action={action} className="space-y-3">
         <input type="hidden" name="categoria" value={categoria} />
-        <CamposProduto categoria={categoria} />
+        <CamposProduto categoria={categoria} subcategorias={subcategorias} />
         {estado?.erro && <p className="text-sm text-alerta">{estado.erro}</p>}
         <Enviar label="Adicionar à lista" />
       </form>
@@ -347,7 +377,11 @@ function FormEdicao({ produto, aoVoltar }: { produto: ProdutoStatus; aoVoltar: (
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="produto_id" value={produto.id} />
-      <CamposProduto categoria={produto.categoria} produto={produto} />
+      <CamposProduto
+        categoria={produto.categoria}
+        produto={produto}
+        subcategorias={subcategorias}
+      />
       {estado?.erro && <p className="text-sm text-alerta">{estado.erro}</p>}
       <Enviar label="Salvar alterações" />
       <button type="button" onClick={aoVoltar} className="btn-secundario">
