@@ -1,4 +1,4 @@
-export type Categoria = "ENXOVAL" | "QUARTO";
+export type Categoria = "ENXOVAL" | "QUARTO" | "MATERNIDADE";
 export type StatusProduto = "PENDENTE" | "PARCIAL" | "COMPLETO";
 
 export type ProdutoStatus = {
