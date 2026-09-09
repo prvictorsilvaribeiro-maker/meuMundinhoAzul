@@ -24,7 +24,7 @@ export function TabBar() {
               key={aba.href}
               href={aba.href}
               aria-current={ativa ? "page" : undefined}
-              className={`flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[10.5px] ${
+              className={`flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[9.5px] ${
                 ativa ? "font-semibold text-sky-deep" : "text-ink-soft"
               }`}
             >
