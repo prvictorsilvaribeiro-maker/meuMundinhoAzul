@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { DetalheProduto, NovoItem } from "@/components/Formularios";
+import { opcoesSubcategoria } from "@/lib/categorias";
 import { brl, pct } from "@/lib/format";
 import type { CompraItem } from "@/lib/queries";
 import type { Categoria, ProdutoStatus } from "@/lib/types";
@@ -83,6 +84,11 @@ export function ListaProdutos({
   const [novo, setNovo] = useState(false);
   const [aberto, setAberto] = useState<ProdutoStatus | null>(null);
 
+  const subcategorias = useMemo(
+    () => opcoesSubcategoria(categoria, produtos.map((p) => p.subcategoria)),
+    [categoria, produtos],
+  );
+
   const visiveis = useMemo(() => {
     if (filtro === "COMPRADO") return produtos.filter((p) => p.status === "COMPLETO");
     if (filtro === "FALTA") return produtos.filter((p) => p.status !== "COMPLETO");
@@ -127,12 +133,19 @@ export function ListaProdutos({
         Adicionar item
       </button>
 
-      {novo && <NovoItem categoria={categoria} aoFechar={() => setNovo(false)} />}
+      {novo && (
+        <NovoItem
+          categoria={categoria}
+          subcategorias={subcategorias}
+          aoFechar={() => setNovo(false)}
+        />
+      )}
       {aberto && (
         <DetalheProduto
           produto={aberto}
           lojas={lojas}
           compras={compras[aberto.id] ?? []}
+          subcategorias={subcategorias}
           aoFechar={() => setAberto(null)}
         />
       )}
