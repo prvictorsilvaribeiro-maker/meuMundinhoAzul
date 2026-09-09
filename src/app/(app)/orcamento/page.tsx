@@ -12,6 +12,7 @@ export default async function OrcamentoPage() {
   const geral = resumir(produtos);
   const enxoval = resumir(produtos.filter((p) => p.categoria === "ENXOVAL"));
   const quarto = resumir(produtos.filter((p) => p.categoria === "QUARTO"));
+  const laura = resumir(produtos.filter((p) => p.categoria === "MATERNIDADE"));
 
   // Gasto por mês, últimos 6 meses com movimento
   const porMes = new Map<string, number>();
@@ -66,6 +67,7 @@ export default async function OrcamentoPage() {
         <div className="flex flex-col gap-4">
           <BarraOrcadoGasto rotulo="Enxoval" orcado={enxoval.orcado} gasto={enxoval.gasto} />
           <BarraOrcadoGasto rotulo="Quarto" orcado={quarto.orcado} gasto={quarto.gasto} />
+          <BarraOrcadoGasto rotulo="Laura" orcado={laura.orcado} gasto={laura.gasto} />
           <BarraOrcadoGasto rotulo="Total" orcado={geral.orcado} gasto={geral.gasto} />
         </div>
       </section>
