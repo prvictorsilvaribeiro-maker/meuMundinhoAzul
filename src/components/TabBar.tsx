@@ -7,6 +7,7 @@ const ABAS = [
   { href: "/", label: "Home", d: "M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5" },
   { href: "/enxoval", label: "Enxoval", d: "M4 8h16l-1 13H5L4 8Zm4 0a4 4 0 0 1 8 0" },
   { href: "/quarto", label: "Quarto", d: "M4 20v-9h16v9M7 11V6h10v5M9 20v-4h6v4" },
+  { href: "/laura", label: "Laura", d: "M12 21s-7-4.6-7-9.6A3.9 3.9 0 0 1 12 9a3.9 3.9 0 0 1 7 2.4c0 5-7 9.6-7 9.6Z" },
   { href: "/orcamento", label: "Orçamento", d: "M4 20V10M10 20V4M16 20v-7M22 20H2" },
 ];
 
