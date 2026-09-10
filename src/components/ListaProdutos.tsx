@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { DetalheProduto, NovoItem } from "@/components/Formularios";
-import { opcoesSubcategoria } from "@/lib/categorias";
+import { FAIXAS, opcoesSubcategoria, ordemFaixa } from "@/lib/categorias";
 import { brl, pct } from "@/lib/format";
 import type { CompraItem } from "@/lib/queries";
 import type { Categoria, ProdutoStatus } from "@/lib/types";
@@ -14,6 +14,8 @@ const FILTROS: { id: Filtro; label: string }[] = [
   { id: "FALTA", label: "Falta" },
   { id: "COMPRADO", label: "Comprado" },
 ];
+
+const SEM_FAIXA = "__sem";
 
 function Item({ produto, aoClicar }: { produto: ProdutoStatus; aoClicar: () => void }) {
   const completo = produto.status === "COMPLETO";
@@ -36,6 +38,11 @@ function Item({ produto, aoClicar }: { produto: ProdutoStatus; aoClicar: () => v
       />
       <div className="flex items-baseline gap-2">
         <p className="text-sm font-semibold">{produto.nome}</p>
+        {produto.faixa_etaria && (
+          <span className="shrink-0 rounded-md bg-sky-wash px-1.5 py-0.5 text-[10px] font-semibold text-sky-deep">
+            {produto.faixa_etaria}
+          </span>
+        )}
         <span
           className={`ml-auto text-xs font-semibold tabular-nums ${
             completo ? "text-mint" : "text-sky-deep"
@@ -81,6 +88,7 @@ export function ListaProdutos({
   compras: Record<string, CompraItem[]>;
 }) {
   const [filtro, setFiltro] = useState<Filtro>("TUDO");
+  const [faixa, setFaixa] = useState<string>("TODAS");
   const [novo, setNovo] = useState(false);
   const [aberto, setAberto] = useState<ProdutoStatus | null>(null);
 
@@ -89,14 +97,56 @@ export function ListaProdutos({
     [categoria, produtos],
   );
 
+  // Só mostra os chips das faixas que realmente existem nesta aba.
+  const chips = useMemo(() => {
+    const presentes = FAIXAS.filter((f) => produtos.some((p) => p.faixa_etaria === f));
+    const temSemFaixa = produtos.some((p) => !p.faixa_etaria);
+    if (presentes.length === 0) return [];
+    return [
+      { id: "TODAS", label: "Todas" },
+      ...presentes.map((f) => ({ id: f as string, label: f as string })),
+      ...(temSemFaixa ? [{ id: SEM_FAIXA, label: "Sem faixa" }] : []),
+    ];
+  }, [produtos]);
+
   const visiveis = useMemo(() => {
-    if (filtro === "COMPRADO") return produtos.filter((p) => p.status === "COMPLETO");
-    if (filtro === "FALTA") return produtos.filter((p) => p.status !== "COMPLETO");
-    return produtos;
-  }, [produtos, filtro]);
+    let lista = produtos;
+
+    if (filtro === "COMPRADO") lista = lista.filter((p) => p.status === "COMPLETO");
+    if (filtro === "FALTA") lista = lista.filter((p) => p.status !== "COMPLETO");
+
+    if (faixa === SEM_FAIXA) lista = lista.filter((p) => !p.faixa_etaria);
+    else if (faixa !== "TODAS") lista = lista.filter((p) => p.faixa_etaria === faixa);
+
+    // Por faixa primeiro, depois alfabético dentro dela.
+    return [...lista].sort((a, b) => {
+      const d = ordemFaixa(a.faixa_etaria) - ordemFaixa(b.faixa_etaria);
+      return d !== 0 ? d : a.nome.localeCompare(b.nome, "pt-BR");
+    });
+  }, [produtos, filtro, faixa]);
+
+  const pecasVisiveis = visiveis.reduce((s, p) => s + p.qtd_desejada, 0);
 
   return (
     <>
+      {chips.length > 0 && (
+        <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
+          {chips.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setFaixa(c.id)}
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-xs ${
+                faixa === c.id
+                  ? "border-sky-deep bg-sky-deep font-semibold text-white"
+                  : "border-linha bg-white font-medium text-ink-soft"
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="mb-3.5 flex gap-1.5 rounded-2xl bg-[#E3EBF5] p-1">
         {FILTROS.map((f) => (
           <button
@@ -114,16 +164,22 @@ export function ListaProdutos({
       </div>
 
       <p className="mb-3 text-[11.5px] text-ink-soft">
-        Toque em um item para registrar a compra, editar ou excluir.
+        {visiveis.length === 0
+          ? "Toque em um item para registrar a compra, editar ou excluir."
+          : `${visiveis.length} ${visiveis.length === 1 ? "item" : "itens"} · ${pecasVisiveis} ${
+              pecasVisiveis === 1 ? "peça" : "peças"
+            }`}
       </p>
 
       {visiveis.length === 0 ? (
         <p className="card text-sm text-ink-soft">
-          {filtro === "COMPRADO"
-            ? "Nada finalizado ainda. Registre uma compra para o primeiro item aparecer aqui."
-            : filtro === "FALTA"
-              ? "Tudo comprado. Vocês fecharam a lista!"
-              : "A lista está vazia. Adicione o primeiro item abaixo."}
+          {faixa !== "TODAS"
+            ? "Nada nessa faixa com esse filtro."
+            : filtro === "COMPRADO"
+              ? "Nada finalizado ainda. Registre uma compra para o primeiro item aparecer aqui."
+              : filtro === "FALTA"
+                ? "Tudo comprado. Vocês fecharam a lista!"
+                : "A lista está vazia. Adicione o primeiro item abaixo."}
         </p>
       ) : (
         visiveis.map((p) => <Item key={p.id} produto={p} aoClicar={() => setAberto(p)} />)
