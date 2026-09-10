@@ -6,6 +6,7 @@ export type ProdutoStatus = {
   nome: string;
   categoria: Categoria;
   subcategoria: string | null;
+  faixa_etaria: string | null;
   qtd_desejada: number;
   valor_orcado: number;
   observacao: string | null;
