@@ -11,10 +11,13 @@ const numero = (v: FormDataEntryValue | null) => {
   return Number.isFinite(n) ? n : 0;
 };
 
+const texto = (v: FormDataEntryValue | null) => String(v ?? "").trim() || null;
+
 function revalidarTudo() {
   revalidatePath("/");
   revalidatePath("/enxoval");
   revalidatePath("/quarto");
+  revalidatePath("/laura");
   revalidatePath("/orcamento");
 }
 
@@ -31,7 +34,8 @@ export async function criarProduto(_estado: Estado, formData: FormData): Promise
   const { error } = await supabase.from("produto").insert({
     nome,
     categoria: formData.get("categoria"),
-    subcategoria: String(formData.get("subcategoria") ?? "").trim() || null,
+    subcategoria: texto(formData.get("subcategoria")),
+    faixa_etaria: texto(formData.get("faixa_etaria")),
     qtd_desejada: qtd,
     valor_orcado: numero(formData.get("valor_orcado")),
     criado_por: user?.id,
@@ -57,7 +61,8 @@ export async function atualizarProduto(_estado: Estado, formData: FormData): Pro
     .from("produto")
     .update({
       nome,
-      subcategoria: String(formData.get("subcategoria") ?? "").trim() || null,
+      subcategoria: texto(formData.get("subcategoria")),
+      faixa_etaria: texto(formData.get("faixa_etaria")),
       qtd_desejada: qtd,
       valor_orcado: numero(formData.get("valor_orcado")),
     })
@@ -81,7 +86,7 @@ export async function registrarCompra(_estado: Estado, formData: FormData): Prom
     produto_id: produtoId,
     qtd,
     valor_pago: numero(formData.get("valor_pago")),
-    loja: String(formData.get("loja") ?? "").trim() || null,
+    loja: texto(formData.get("loja")),
     data: String(formData.get("data") || new Date().toISOString().slice(0, 10)),
     criado_por: user?.id,
   });
