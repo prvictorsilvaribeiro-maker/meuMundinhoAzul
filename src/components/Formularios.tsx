@@ -9,7 +9,7 @@ import {
   criarProduto,
   registrarCompra,
 } from "@/app/actions";
-import { CATEGORIAS } from "@/lib/categorias";
+import { CATEGORIAS, FAIXAS } from "@/lib/categorias";
 import { brl, dataCurta } from "@/lib/format";
 import type { CompraItem } from "@/lib/queries";
 import type { Categoria, ProdutoStatus } from "@/lib/types";
@@ -72,9 +72,11 @@ function Sheet({
 
 // Os mesmos campos servem para criar e para editar.
 function CamposProduto({
+  categoria,
   produto,
   subcategorias,
 }: {
+  categoria: Categoria;
   produto?: ProdutoStatus;
   subcategorias: string[];
 }) {
@@ -122,6 +124,20 @@ function CamposProduto({
           />
         </div>
       </div>
+
+      {categoria === "ENXOVAL" && (
+        <div>
+          <label htmlFor="faixa">Faixa etária</label>
+          <select id="faixa" name="faixa_etaria" defaultValue={produto?.faixa_etaria ?? ""}>
+            <option value="">Sem faixa</option>
+            {FAIXAS.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div>
         <label htmlFor="grupo">Categoria</label>
@@ -179,7 +195,7 @@ export function NovoItem({
     >
       <form action={action} className="space-y-3">
         <input type="hidden" name="categoria" value={categoria} />
-        <CamposProduto subcategorias={subcategorias} />
+        <CamposProduto categoria={categoria} subcategorias={subcategorias} />
         {estado?.erro && <p className="text-sm text-alerta">{estado.erro}</p>}
         <Enviar label="Adicionar à lista" />
       </form>
@@ -394,7 +410,11 @@ function FormEdicao({
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="produto_id" value={produto.id} />
-      <CamposProduto produto={produto} subcategorias={subcategorias} />
+      <CamposProduto
+        categoria={produto.categoria}
+        produto={produto}
+        subcategorias={subcategorias}
+      />
       {estado?.erro && <p className="text-sm text-alerta">{estado.erro}</p>}
       <Enviar label="Salvar alterações" />
       <button type="button" onClick={aoVoltar} className="btn-secundario">
