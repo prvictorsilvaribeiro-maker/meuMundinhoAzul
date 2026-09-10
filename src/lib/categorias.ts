@@ -36,7 +36,7 @@ export const SUBCATEGORIAS: Record<Categoria, string[]> = {
   ],
 };
 
-// Junta as fixas com as que já existem na lista, pra nada sumir do select.
+// Junta as fixas com as que já existem na lista, para nada sumir do select.
 export function opcoesSubcategoria(categoria: Categoria, usadas: (string | null)[]) {
   const fixas = SUBCATEGORIAS[categoria];
   const extras = [...new Set(usadas.filter((s): s is string => !!s))]
@@ -44,3 +44,11 @@ export function opcoesSubcategoria(categoria: Categoria, usadas: (string | null)
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
   return [...fixas, ...extras];
 }
+
+export const FAIXAS = ["RN", "0-3M", "3-6M", "6-9M", "9-12M"] as const;
+
+// Posição para ordenar a lista. Sem faixa vai para o fim.
+export const ordemFaixa = (f: string | null) => {
+  const i = FAIXAS.indexOf(f as (typeof FAIXAS)[number]);
+  return i === -1 ? FAIXAS.length : i;
+};
