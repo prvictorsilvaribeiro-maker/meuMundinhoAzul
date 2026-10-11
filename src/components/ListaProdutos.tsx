@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { DetalheProduto, NovoItem } from "@/components/Formularios";
 import { FAIXAS, opcoesSubcategoria, ordemFaixa } from "@/lib/categorias";
-import { brl, pct } from "@/lib/format";
+import { brl, pct, usd } from "@/lib/format";
 import type { CompraItem } from "@/lib/queries";
 import type { Categoria, ProdutoStatus } from "@/lib/types";
 
@@ -52,10 +52,17 @@ function Item({ produto, aoClicar }: { produto: ProdutoStatus; aoClicar: () => v
         </span>
       </div>
 
-      <div className="mt-1.5 flex gap-3.5 text-[11.5px] text-ink-soft">
-        <span>
-          Orçado <b className="font-semibold text-ink">{brl(produto.valor_orcado)}</b>
-        </span>
+      <div className="mt-1.5 flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] text-ink-soft">
+        {produto.valor_orcado_usd ? (
+          <span>
+            Orçado <b className="font-semibold text-ink">{usd(produto.valor_orcado_usd)}</b>
+            <span className="text-ink-soft"> · {brl(produto.valor_orcado)}</span>
+          </span>
+        ) : (
+          <span>
+            Orçado <b className="font-semibold text-ink">{brl(produto.valor_orcado)}</b>
+          </span>
+        )}
         {produto.qtd_comprada > 0 && (
           <span>
             Pago{" "}
@@ -81,11 +88,13 @@ export function ListaProdutos({
   categoria,
   lojas,
   compras,
+  cotacao,
 }: {
   produtos: ProdutoStatus[];
   categoria: Categoria;
   lojas: string[];
   compras: Record<string, CompraItem[]>;
+  cotacao: number;
 }) {
   const [filtro, setFiltro] = useState<Filtro>("TUDO");
   const [faixa, setFaixa] = useState<string>("TODAS");
@@ -126,6 +135,7 @@ export function ListaProdutos({
   }, [produtos, filtro, faixa]);
 
   const pecasVisiveis = visiveis.reduce((s, p) => s + p.qtd_desejada, 0);
+  const brlVisivel = visiveis.reduce((s, p) => s + p.valor_orcado, 0);
 
   return (
     <>
@@ -168,7 +178,7 @@ export function ListaProdutos({
           ? "Toque em um item para registrar a compra, editar ou excluir."
           : `${visiveis.length} ${visiveis.length === 1 ? "item" : "itens"} · ${pecasVisiveis} ${
               pecasVisiveis === 1 ? "peça" : "peças"
-            }`}
+            } · ${brl(brlVisivel)}`}
       </p>
 
       {visiveis.length === 0 ? (
@@ -193,6 +203,7 @@ export function ListaProdutos({
         <NovoItem
           categoria={categoria}
           subcategorias={subcategorias}
+          cotacao={cotacao}
           aoFechar={() => setNovo(false)}
         />
       )}
@@ -202,6 +213,7 @@ export function ListaProdutos({
           lojas={lojas}
           compras={compras[aberto.id] ?? []}
           subcategorias={subcategorias}
+          cotacao={cotacao}
           aoFechar={() => setAberto(null)}
         />
       )}
