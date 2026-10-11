@@ -1,6 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Bebe, Categoria, ProdutoStatus } from "@/lib/types";
 
+export const COTACAO_PADRAO = 5.19;
+
+export async function buscarCotacao(): Promise<number> {
+  const supabase = createClient();
+  const { data } = await supabase.from("configuracao").select("cotacao_dolar").maybeSingle();
+  return data ? Number(data.cotacao_dolar) : COTACAO_PADRAO;
+}
+
 export async function buscarProdutos(categoria?: Categoria): Promise<ProdutoStatus[]> {
   const supabase = createClient();
   let query = supabase.from("produto_status").select("*").order("nome");
@@ -9,7 +17,10 @@ export async function buscarProdutos(categoria?: Categoria): Promise<ProdutoStat
   const { data } = await query;
   return (data ?? []).map((p) => ({
     ...p,
+    preco_usd: p.preco_usd === null ? null : Number(p.preco_usd),
+    valor_orcado_usd: p.valor_orcado_usd === null ? null : Number(p.valor_orcado_usd),
     valor_orcado: Number(p.valor_orcado),
+    cotacao: Number(p.cotacao),
     valor_gasto: Number(p.valor_gasto),
   })) as ProdutoStatus[];
 }
@@ -53,6 +64,7 @@ export function resumir(produtos: ProdutoStatus[]) {
     pecasCompradas,
     percentualPecas: pecasDesejadas === 0 ? 0 : Math.round((pecasCompradas / pecasDesejadas) * 100),
     orcado: produtos.reduce((s, p) => s + p.valor_orcado, 0),
+    orcadoUsd: produtos.reduce((s, p) => s + (p.valor_orcado_usd ?? 0), 0),
     gasto: produtos.reduce((s, p) => s + p.valor_gasto, 0),
   };
 }
