@@ -11,6 +11,14 @@ const numero = (v: FormDataEntryValue | null) => {
   return Number.isFinite(n) ? n : 0;
 };
 
+// Mesma conversão, mas devolve null quando o campo veio vazio.
+const numeroOuNulo = (v: FormDataEntryValue | null) => {
+  const bruto = String(v ?? "").trim();
+  if (!bruto) return null;
+  const n = numero(v);
+  return n > 0 ? n : null;
+};
+
 const texto = (v: FormDataEntryValue | null) => String(v ?? "").trim() || null;
 
 function revalidarTudo() {
@@ -31,13 +39,17 @@ export async function criarProduto(_estado: Estado, formData: FormData): Promise
   const qtd = Math.trunc(numero(formData.get("qtd_desejada")));
   if (qtd < 1) return { ok: false, erro: "A quantidade precisa ser pelo menos 1." };
 
+  // Com preço em dólar, o valor em real sai da cotação — não é gravado.
+  const precoUsd = numeroOuNulo(formData.get("preco_usd"));
+
   const { error } = await supabase.from("produto").insert({
     nome,
     categoria: formData.get("categoria"),
     subcategoria: texto(formData.get("subcategoria")),
     faixa_etaria: texto(formData.get("faixa_etaria")),
     qtd_desejada: qtd,
-    valor_orcado: numero(formData.get("valor_orcado")),
+    preco_usd: precoUsd,
+    valor_orcado: precoUsd ? 0 : numero(formData.get("valor_orcado")),
     criado_por: user?.id,
   });
 
@@ -57,6 +69,8 @@ export async function atualizarProduto(_estado: Estado, formData: FormData): Pro
   const qtd = Math.trunc(numero(formData.get("qtd_desejada")));
   if (qtd < 1) return { ok: false, erro: "A quantidade precisa ser pelo menos 1." };
 
+  const precoUsd = numeroOuNulo(formData.get("preco_usd"));
+
   const { error } = await supabase
     .from("produto")
     .update({
@@ -64,7 +78,8 @@ export async function atualizarProduto(_estado: Estado, formData: FormData): Pro
       subcategoria: texto(formData.get("subcategoria")),
       faixa_etaria: texto(formData.get("faixa_etaria")),
       qtd_desejada: qtd,
-      valor_orcado: numero(formData.get("valor_orcado")),
+      preco_usd: precoUsd,
+      valor_orcado: precoUsd ? 0 : numero(formData.get("valor_orcado")),
     })
     .eq("id", id);
 
@@ -92,6 +107,23 @@ export async function registrarCompra(_estado: Estado, formData: FormData): Prom
   });
 
   if (error) return { ok: false, erro: "Não deu pra registrar a compra. Tente de novo." };
+
+  revalidarTudo();
+  return { ok: true };
+}
+
+export async function atualizarCotacao(_estado: Estado, formData: FormData): Promise<Estado> {
+  const supabase = createClient();
+
+  const cotacao = numero(formData.get("cotacao_dolar"));
+  if (cotacao <= 0) return { ok: false, erro: "Informe uma cotação válida." };
+
+  const { error } = await supabase
+    .from("configuracao")
+    .update({ cotacao_dolar: cotacao, atualizado_em: new Date().toISOString() })
+    .eq("id", true);
+
+  if (error) return { ok: false, erro: "Não deu pra salvar a cotação." };
 
   revalidarTudo();
   return { ok: true };
