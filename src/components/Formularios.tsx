@@ -10,7 +10,7 @@ import {
   registrarCompra,
 } from "@/app/actions";
 import { CATEGORIAS, FAIXAS } from "@/lib/categorias";
-import { brl, dataCurta } from "@/lib/format";
+import { brl, dataCurta, usd } from "@/lib/format";
 import type { CompraItem } from "@/lib/queries";
 import type { Categoria, ProdutoStatus } from "@/lib/types";
 
@@ -70,21 +70,36 @@ function Sheet({
   );
 }
 
+const paraNumero = (s: string) => {
+  const n = Number(s.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+};
+
 // Os mesmos campos servem para criar e para editar.
 function CamposProduto({
   categoria,
   produto,
   subcategorias,
+  cotacao,
 }: {
   categoria: Categoria;
   produto?: ProdutoStatus;
   subcategorias: string[];
+  cotacao: number;
 }) {
   const atual = produto?.subcategoria ?? "";
   const jaNaLista = atual !== "" && subcategorias.includes(atual);
 
   const [grupo, setGrupo] = useState(jaNaLista ? atual : atual ? "__outra" : "");
   const [outroGrupo, setOutroGrupo] = useState(jaNaLista ? "" : atual);
+
+  const [precoUsd, setPrecoUsd] = useState(
+    produto?.preco_usd ? String(produto.preco_usd).replace(".", ",") : "",
+  );
+  const [qtd, setQtd] = useState(String(produto?.qtd_desejada ?? 1));
+
+  const temUsd = paraNumero(precoUsd) > 0;
+  const previsto = paraNumero(precoUsd) * (paraNumero(qtd) || 1) * cotacao;
 
   return (
     <>
@@ -96,7 +111,7 @@ function CamposProduto({
           id="nome"
           name="nome"
           defaultValue={produto?.nome}
-          placeholder="Body manga curta RN"
+          placeholder="Body manga curta"
           required
         />
       </div>
@@ -109,21 +124,47 @@ function CamposProduto({
             name="qtd_desejada"
             type="number"
             min="1"
-            defaultValue={produto?.qtd_desejada ?? 1}
+            value={qtd}
+            onChange={(e) => setQtd(e.target.value)}
             required
           />
         </div>
         <div>
-          <label htmlFor="valor_orcado">Orçado (R$)</label>
+          <label htmlFor="preco_usd">Preço unit. (US$)</label>
+          <input
+            id="preco_usd"
+            name="preco_usd"
+            inputMode="decimal"
+            value={precoUsd}
+            onChange={(e) => setPrecoUsd(e.target.value)}
+            placeholder="4,00"
+          />
+        </div>
+      </div>
+
+      {temUsd ? (
+        <p className="text-[11.5px] text-ink-soft">
+          {usd(paraNumero(precoUsd))} x {paraNumero(qtd) || 1} ={" "}
+          <b className="font-semibold text-ink">{brl(previsto)}</b> com o dólar a {brl(cotacao)}. O
+          valor em real se ajusta sozinho se a cotação mudar.
+        </p>
+      ) : (
+        <div>
+          <label htmlFor="valor_orcado">Orçado total (R$)</label>
           <input
             id="valor_orcado"
             name="valor_orcado"
             inputMode="decimal"
-            defaultValue={produto ? String(produto.valor_orcado).replace(".", ",") : ""}
+            defaultValue={
+              produto && !produto.preco_usd ? String(produto.valor_orcado).replace(".", ",") : ""
+            }
             placeholder="125,00"
           />
+          <p className="mt-1 text-[11.5px] text-ink-soft">
+            Para o que for comprado no Brasil. Se preencher o preço em dólar, este campo some.
+          </p>
         </div>
-      </div>
+      )}
 
       {categoria === "ENXOVAL" && (
         <div>
@@ -175,10 +216,12 @@ function CamposProduto({
 export function NovoItem({
   categoria,
   subcategorias,
+  cotacao,
   aoFechar,
 }: {
   categoria: Categoria;
   subcategorias: string[];
+  cotacao: number;
   aoFechar: () => void;
 }) {
   const [estado, action] = useFormState(criarProduto, null);
@@ -190,12 +233,16 @@ export function NovoItem({
   return (
     <Sheet
       titulo={`Novo item · ${CATEGORIAS[categoria].titulo}`}
-      descricao="O valor orçado é o total que você planeja gastar com todas as unidades."
+      descricao="Comprando nos EUA, preencha o preço em dólar. O real vem da cotação."
       aoFechar={aoFechar}
     >
       <form action={action} className="space-y-3">
         <input type="hidden" name="categoria" value={categoria} />
-        <CamposProduto categoria={categoria} subcategorias={subcategorias} />
+        <CamposProduto
+          categoria={categoria}
+          subcategorias={subcategorias}
+          cotacao={cotacao}
+        />
         {estado?.erro && <p className="text-sm text-alerta">{estado.erro}</p>}
         <Enviar label="Adicionar à lista" />
       </form>
@@ -212,32 +259,44 @@ export function DetalheProduto({
   lojas,
   compras,
   subcategorias,
+  cotacao,
   aoFechar,
 }: {
   produto: ProdutoStatus;
   lojas: string[];
   compras: CompraItem[];
   subcategorias: string[];
+  cotacao: number;
   aoFechar: () => void;
 }) {
   const [modo, setModo] = useState<"compra" | "editar" | "excluir">("compra");
   const faltam = Math.max(0, produto.qtd_desejada - produto.qtd_comprada);
+
+  const orcado = produto.valor_orcado_usd
+    ? `${usd(produto.valor_orcado_usd)} (${brl(produto.valor_orcado)})`
+    : brl(produto.valor_orcado);
 
   return (
     <Sheet
       titulo={produto.nome}
       descricao={
         modo === "editar"
-          ? "Mudar o nome, a quantidade ou o valor orçado não mexe nas compras já registradas."
+          ? "Mudar o nome, a quantidade ou o preço não mexe nas compras já registradas."
           : faltam > 0
-            ? `Faltam ${faltam} de ${produto.qtd_desejada}. Orçado: ${brl(produto.valor_orcado)}.`
+            ? `Faltam ${faltam} de ${produto.qtd_desejada}. Orçado: ${orcado}.`
             : "Já completo. Registrar mesmo assim soma ao total gasto."
       }
       aoFechar={aoFechar}
     >
       {modo === "compra" && (
         <>
-          <FormCompra produto={produto} lojas={lojas} faltam={faltam} aoFechar={aoFechar} />
+          <FormCompra
+            produto={produto}
+            lojas={lojas}
+            faltam={faltam}
+            cotacao={cotacao}
+            aoFechar={aoFechar}
+          />
           <Historico compras={compras} />
           <div className="mt-4 flex gap-3 border-t border-linha pt-4 text-[13px]">
             <button onClick={() => setModo("editar")} className="font-medium text-sky-deep">
@@ -254,6 +313,7 @@ export function DetalheProduto({
         <FormEdicao
           produto={produto}
           subcategorias={subcategorias}
+          cotacao={cotacao}
           aoVoltar={() => setModo("compra")}
         />
       )}
@@ -274,20 +334,25 @@ function FormCompra({
   produto,
   lojas,
   faltam,
+  cotacao,
   aoFechar,
 }: {
   produto: ProdutoStatus;
   lojas: string[];
   faltam: number;
+  cotacao: number;
   aoFechar: () => void;
 }) {
   const [estado, action] = useFormState(registrarCompra, null);
   const [loja, setLoja] = useState("");
   const [outraLoja, setOutraLoja] = useState("");
+  const [dolar, setDolar] = useState("");
 
   useEffect(() => {
     if (estado?.ok) aoFechar();
   }, [estado, aoFechar]);
+
+  const convertido = paraNumero(dolar) * cotacao;
 
   return (
     <form action={action} className="space-y-3">
@@ -301,8 +366,32 @@ function FormCompra({
         </div>
         <div>
           <label htmlFor="valor_pago">Paguei (R$)</label>
-          <input id="valor_pago" name="valor_pago" inputMode="decimal" placeholder="78,00" />
+          <input
+            id="valor_pago"
+            name="valor_pago"
+            inputMode="decimal"
+            placeholder="78,00"
+            defaultValue={convertido > 0 ? convertido.toFixed(2).replace(".", ",") : ""}
+            key={convertido}
+          />
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="conversor">Pagou em dólar? Converta aqui</label>
+        <input
+          id="conversor"
+          inputMode="decimal"
+          value={dolar}
+          onChange={(e) => setDolar(e.target.value)}
+          placeholder="US$ 15,00"
+        />
+        {paraNumero(dolar) > 0 && (
+          <p className="mt-1 text-[11.5px] text-ink-soft">
+            {usd(paraNumero(dolar))} = <b className="font-semibold text-ink">{brl(convertido)}</b>{" "}
+            a {brl(cotacao)}. O valor já foi preenchido acima — ajuste se quiser.
+          </p>
+        )}
       </div>
 
       <div>
@@ -395,10 +484,12 @@ function Historico({ compras }: { compras: CompraItem[] }) {
 function FormEdicao({
   produto,
   subcategorias,
+  cotacao,
   aoVoltar,
 }: {
   produto: ProdutoStatus;
   subcategorias: string[];
+  cotacao: number;
   aoVoltar: () => void;
 }) {
   const [estado, action] = useFormState(atualizarProduto, null);
@@ -414,6 +505,7 @@ function FormEdicao({
         categoria={produto.categoria}
         produto={produto}
         subcategorias={subcategorias}
+        cotacao={cotacao}
       />
       {estado?.erro && <p className="text-sm text-alerta">{estado.erro}</p>}
       <Enviar label="Salvar alterações" />
