@@ -1,14 +1,22 @@
+import { AvisoCotacao } from "@/components/AvisoCotacao";
 import { ListaProdutos } from "@/components/ListaProdutos";
-import { brl } from "@/lib/format";
-import { buscarComprasPorProduto, buscarLojas, buscarProdutos, resumir } from "@/lib/queries";
+import { brl, usd } from "@/lib/format";
+import {
+  buscarComprasPorProduto,
+  buscarCotacao,
+  buscarLojas,
+  buscarProdutos,
+  resumir,
+} from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function EnxovalPage() {
-  const [produtos, lojas, compras] = await Promise.all([
+  const [produtos, lojas, compras, cotacao] = await Promise.all([
     buscarProdutos("ENXOVAL"),
     buscarLojas(),
     buscarComprasPorProduto(),
+    buscarCotacao(),
   ]);
   const r = resumir(produtos);
 
@@ -17,10 +25,20 @@ export default async function EnxovalPage() {
       <header className="mb-4">
         <p className="text-xs text-ink-soft">
           {brl(r.gasto)} de {brl(r.orcado)} orçados
+          {r.orcadoUsd > 0 && ` · ${usd(r.orcadoUsd)} nos EUA`}
         </p>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Enxoval</h1>
       </header>
-      <ListaProdutos produtos={produtos} categoria="ENXOVAL" lojas={lojas} compras={compras} />
+
+      {r.orcadoUsd > 0 && <AvisoCotacao cotacao={cotacao} />}
+
+      <ListaProdutos
+        produtos={produtos}
+        categoria="ENXOVAL"
+        lojas={lojas}
+        compras={compras}
+        cotacao={cotacao}
+      />
     </>
   );
 }
